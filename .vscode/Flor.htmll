@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buenos días Florecitas</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-image: url('img/fondo.JPEG'); 
+            background-size: cover;
+            background-repeat: no-repeat;
+        }
+        #canvasContainer {
+            position: relative;
+        }
+        #canvas {
+            display: block;
+            margin: auto;
+            border: 1px solid black;
+        }
+        #contador {
+            position: absolute;
+            top: 10px; /* Posición arriba */
+            left: 10px; /* Posición izquierda */
+            z-index: 1; /* Para estar encima del canvas */
+            color: white; /* Color del texto */
+            font-family: Arial, sans-serif; /* Fuente del texto */
+        }
+        #botones {
+            position: absolute;
+            top: 50px; /* Posición arriba */
+            left: 10px; /* Posición izquierda */
+            z-index: 1; /* Para estar encima del canvas */
+        }
+        button {
+            margin-right: 5px;
+        }
+        #mensaje {
+            position: absolute;
+            bottom: 10px; /* Posición abajo */
+            left: 10px; /* Posición izquierda */
+            z-index: 1; /* Para estar encima del canvas */
+            background-color: white; /* Fondo blanco */
+            border: 1px solid black; /* Borde negro */
+            padding: 5px; /* Espaciado interno */
+            display: none; /* Ocultar por defecto */
+        }
+    </style>
+</head>
+<body>
+    <div id="contador">Monedas: <span id="monedas">0</span></div>
+    <div id="botones">
+        <button onclick="moverIzquierda()">Izquierda</button>
+        <button onclick="moverDerecha()">Derecha</button>
+        <button onclick="moverArriba()">Arriba</button>
+        <button onclick="moverAbajo()">Abajo</button>
+        <br>
+        <button onclick="regarFlor()">Regar</button>
+        <button onclick="abonarFlor()">Abonar</button>
+    </div>
+    <div id="mensaje"></div>
+    <div id="canvasContainer">
+        <canvas id="canvas" width="600" height="400"></canvas>
+    </div>
+    <script>
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+
+        // Cargar imágenes
+        const personajeImg = new Image();
+        personajeImg.src = "img/Jardinero.PNG";
+
+        const flor1Img = new Image();
+        flor1Img.src = "img/flor1.PNG"; // Ruta a la imagen de la flor 1
+
+        const flor2Img = new Image();
+        flor2Img.src = "img/flor2.PNG"; // Ruta a la imagen de la flor 2
+
+        const flor3Img = new Image();
+        flor3Img.src = "img/flor3.PNG"; // Ruta a la imagen de la flor 3
+
+        // Definir tamaño del canvas
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+
+        // Definir posición del personaje
+        let personajeX = canvasWidth / 2 - 25; // Posición inicial centrada
+        let personajeY = canvasHeight / 2 - 25;
+
+       
+        // Clase Flor
+        class Flor {
+            constructor(x, y, tipo, vida) {
+                this.x = x;
+                this.y = y;
+                this.tipo = tipo;
+                this.vida = vida;
+                this.regada = false;
+                this.abonada = false;
+            }
+
+            regar() {
+                if (!this.regada) {
+                    this.regada = true;
+                    this.vida += 10;
+                    this.notifyObservers();
+                    mostrarMensaje(`Gracias por alimentarme! Ganaste 10 monedas. Total de monedas: ${contadorMonedas.monedas}`);
+                }
+            }
+
+            abonar() {
+                if (!this.abonada) {
+                    this.abonada = true;
+                    this.vida += 15;
+                    this.notifyObservers();
+                    mostrarMensaje(`Gracias por alimentarme! Ganaste 15 monedas. Total de monedas: ${contadorMonedas.monedas}`);
+                }
+            }
+
+            addObserver(observer) {
+                this.observers.push(observer);
+            }
+
+            removeObserver(observer) {
+                this.observers = this.observers.filter(obs => obs !== observer);
+            }
+
+            notifyObservers() {
+                this.observers.forEach(observer => observer.update(this));
+            }
+        }
+        let monedas = 0;
+
+// Clase ContadorMonedas
+class ContadorMonedas {
+    constructor() {
+        this.monedas = 0;
+    }
+
+    update(flor) {
+        this.monedas += getValorMonedas(flor.tipo);
+        document.getElementById("monedas").innerText = this.monedas.toString();
+    }
+}
+
+// Instancia de ContadorMonedas
+const contadorMonedas = new ContadorMonedas();
+
+
+        // Crear flores observables
+        const flores = [
+            new Flor(Math.random() * (canvasWidth - 50), Math.random() * (canvasHeight - 50), 1, 50),
+            new Flor(Math.random() * (canvasWidth - 50), Math.random() * (canvasHeight - 50), 2, 45),
+            new Flor(Math.random() * (canvasWidth - 50), Math.random() * (canvasHeight - 50), 3, 30)
+        ];
+
+        // Añadir el observador a cada flor
+        flores.forEach(flor => flor.addObserver(contadorMonedas));
+
+        // Función para dibujar en el canvas
+        function draw() {
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+            // Dibujar personaje
+            ctx.drawImage(personajeImg, personajeX, personajeY, 50, 50);
+
+            // Dibujar flores y mostrar porcentaje de vida al tocarlas
+            flores.forEach(flor => {
+                ctx.drawImage(getFlorImg(flor.tipo), flor.x, flor.y, 50, 50);
+                if (isInsideFlor(flor, personajeX, personajeY)) {
+                    alert("Flor " + flor.tipo + " - Vida: " + flor.vida + "%");
+                }
+            });
+        }
+
+        // Función para obtener la imagen de una flor específica según su tipo
+        function getFlorImg(tipo) {
+            switch (tipo) {
+                case 1:
+                    return flor1Img;
+                case 2:
+                    return flor2Img;
+                case 3:
+                return flor3Img;
+                default:
+                    return null;
+            }
+        }
+
+        // Función para determinar si el personaje está dentro del área de una flor
+        function isInsideFlor(flor, x, y) {
+            return x >= flor.x && x <= flor.x + 50 && y >= flor.y && y <= flor.y + 50;
+        }
+
+        // Función para mover el personaje con los botones
+        function moverIzquierda() {
+            personajeX -= 10;
+            if (personajeX < 0) personajeX = 0;
+            draw();
+        }
+
+        function moverDerecha() {
+            personajeX += 10;
+            if (personajeX > canvasWidth - 50) personajeX = canvasWidth - 50;
+            draw();
+        }
+
+        function moverArriba() {
+            personajeY -= 10;
+            if (personajeY < 0) personajeY = 0;
+            draw();
+        }
+
+        function moverAbajo() {
+            personajeY += 10;
+            if (personajeY > canvasHeight - 50) personajeY = canvasHeight - 50;
+            draw();
+        }
+
+        function regarFlor() {
+    flores.forEach(flor => {
+        if (isInsideFlor(flor, personajeX, personajeY) && !flor.regada) {
+            flor.vida += 10;
+            flor.regada = true;
+            monedas += getValorMonedas(flor.tipo);
+            document.getElementById("monedas").innerText = monedas.toString();
+            if (flor.vida > 100) {
+                alert("Eres un buen jardinero Wonka");
+                flor.vida = 100;
+            }
+            mostrarMensaje(`Gracias por regar! Ganaste ${getValorMonedas(flor.tipo)} monedas. Total de monedas: ${monedas}`);
+            setTimeout(() => {
+                flor.regada = false;
+            }, 30000); // Restablecer la posibilidad de regar después de 30 segundos
+        } else if (flor.regada && flor.intentos < 5) {
+            alert("Mucho por hoy, voy a descansar");
+            flor.intentos++;
+            flor.regada = false; // Restablecer la regada para permitir regar de nuevo
+        } else if (flor.regada && flor.intentos >= 5) {
+            alert("Mucho por hoy, voy a descansar");
+        }
+    });
+}
+
+function abonarFlor() {
+    flores.forEach(flor => {
+        if (isInsideFlor(flor, personajeX, personajeY) && !flor.abonada) {
+            flor.vida += 15;
+            flor.abonada = true;
+            monedas += getValorMonedas(flor.tipo);
+            document.getElementById("monedas").innerText = monedas.toString();
+            if (flor.vida > 100) {
+                alert("Eres un buen jardinero Wonka");
+                flor.vida = 100;
+            }
+            mostrarMensaje(`Gracias por abonar! Ganaste ${getValorMonedas(flor.tipo)} monedas. Total de monedas: ${monedas}`);
+            setTimeout(() => {
+                flor.abonada = false;
+            }, 30000); // Restablecer la posibilidad de abonar después de 30 segundos
+        } else if (flor.abonada && flor.intentos < 5) {
+            alert("Mucho por hoy, voy a descansar");
+            flor.intentos++;
+            flor.abonada = false; // Restablecer la abonada para permitir abonar de nuevo
+        } else if (flor.abonada && flor.intentos >= 5) {
+            alert("Mucho por hoy, voy a descansar");
+        }
+    });
+}
+
+// Función para obtener el valor de las monedas por cada tipo de flor
+function getValorMonedas(tipo) {
+    switch (tipo) {
+        case 1:
+            return 2;
+        case 2:
+            return 5;
+        case 3:
+            return 10;
+        default:
+            return 0;
+    }
+}
+
+        // Llamar a la función draw al cargar la página
+        draw();
+    </script>
+</body>
+</html>
